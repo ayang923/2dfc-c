@@ -95,14 +95,14 @@ void FC2D(scalar_func_2D_t f, double h, curve_seq_t curve_seq, double eps_xi_eta
         n_y_fft = r_cartesian_mesh_obj.n_y;
     }
     else {
-    if (n_x_fft < r_cartesian_mesh_obj.n_x) {
-        fprintf(stderr, "Error: n_x_fft (%d) is less than r_cartesian_mesh_obj.n_x (%d)\n", n_x_fft, r_cartesian_mesh_obj.n_x);
-        exit(EXIT_FAILURE);
-    }
-    if (n_y_fft < r_cartesian_mesh_obj.n_y) {
-        fprintf(stderr, "Error: n_y_fft (%d) is less than r_cartesian_mesh_obj.n_y (%d)\n", n_y_fft, r_cartesian_mesh_obj.n_y);
-        exit(EXIT_FAILURE);
-    }
+        if (n_x_fft < r_cartesian_mesh_obj.n_x) {
+            fprintf(stderr, "Error: n_x_fft (%d) is less than r_cartesian_mesh_obj.n_x (%d)\n", n_x_fft, r_cartesian_mesh_obj.n_x);
+            exit(EXIT_FAILURE);
+        }
+        if (n_y_fft < r_cartesian_mesh_obj.n_y) {
+            fprintf(stderr, "Error: n_y_fft (%d) is less than r_cartesian_mesh_obj.n_y (%d)\n", n_y_fft, r_cartesian_mesh_obj.n_y);
+            exit(EXIT_FAILURE);
+        }
     }
     printf("FC error: %e\n", r_cartesian_mesh_compute_fc_error(&r_cartesian_mesh_obj, f, 2, boundary_X, boundary_Y, n_x_fft, n_y_fft));
 }
@@ -191,14 +191,14 @@ void FC2D_heap(scalar_func_2D_t f, double h, curve_seq_t curve_seq, double eps_x
         n_y_fft = r_cartesian_mesh_obj.n_y;
     }
     else {
-    if (n_x_fft < r_cartesian_mesh_obj.n_x) {
-        fprintf(stderr, "Error: n_x_fft (%d) is less than r_cartesian_mesh_obj.n_x (%d)\n", n_x_fft, r_cartesian_mesh_obj.n_x);
-        exit(EXIT_FAILURE);
-    }
-    if (n_y_fft < r_cartesian_mesh_obj.n_y) {
-        fprintf(stderr, "Error: n_y_fft (%d) is less than r_cartesian_mesh_obj.n_y (%d)\n", n_y_fft, r_cartesian_mesh_obj.n_y);
-        exit(EXIT_FAILURE);
-    }
+        if (n_x_fft < r_cartesian_mesh_obj.n_x) {
+            fprintf(stderr, "Error: n_x_fft (%d) is less than r_cartesian_mesh_obj.n_x (%d)\n", n_x_fft, r_cartesian_mesh_obj.n_x);
+            exit(EXIT_FAILURE);
+        }
+        if (n_y_fft < r_cartesian_mesh_obj.n_y) {
+            fprintf(stderr, "Error: n_y_fft (%d) is less than r_cartesian_mesh_obj.n_y (%d)\n", n_y_fft, r_cartesian_mesh_obj.n_y);
+            exit(EXIT_FAILURE);
+        }
     }
     printf("FC error: %e\n", r_cartesian_mesh_compute_fc_error_heap(&r_cartesian_mesh_obj, f, 2, boundary_X, boundary_Y, n_x_fft, n_y_fft));
 

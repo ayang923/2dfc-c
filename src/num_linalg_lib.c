@@ -36,7 +36,7 @@ void shift_idx_mesh(ri_mat_t *mat, int min_bound, int max_bound) {
 }
 
 void rd_meshgrid(rd_mat_t x, rd_mat_t y, rd_mat_t *X, rd_mat_t *Y) {
-    // assumes x and y are column vectors
+    /* x and y are assumed to be column vectors */
 
     X->rows = y.rows;
     X->columns = x.rows;
@@ -86,7 +86,7 @@ void ri_range(int start, int step_size, int end, ri_mat_t *mat_addr) {
 }
 
 void ri_meshgrid(ri_mat_t x, ri_mat_t y, ri_mat_t *X, ri_mat_t *Y) {
-    // assumes x and y are column vectors
+    /* x and y are assumed to be column vectors */
 
     X->rows = y.rows;
     X->columns = x.rows;
@@ -113,13 +113,13 @@ void ri_print_matrix(ri_mat_t mat) {
 }
 
 double barylag(rd_mat_t ix, rd_mat_t iy, double x) {
-    // assumes ix and iy are column vectors
+    /* ix and iy are assumed to be column vectors */
 
-    //computing weights
     MKL_INT n = ix.rows;
     double w[n];
     w[0] = 1;
 
+    /* Compute barycentric weights: w[j] = prod_{k != j} (ix[j] - ix[k]) */
     for (MKL_INT j = 1; j < n; j++) {
         w[j] = 1;
         for (MKL_INT k = 0; k < j; k++) {
@@ -131,6 +131,7 @@ double barylag(rd_mat_t ix, rd_mat_t iy, double x) {
         w[j] = 1/w[j];
     }
 
+    /* Early exit if x coincides with a node (avoids division by zero) */
     double w_x_distance[n];
     for (MKL_INT j = 0; j < n; j++) {
         if (fabs(ix.mat_data[j]-x) < DBL_EPSILON) {
@@ -138,9 +139,11 @@ double barylag(rd_mat_t ix, rd_mat_t iy, double x) {
         }
         w_x_distance[j] = 1/(x-ix.mat_data[j]);
     }
-    
+
+    /* w_x_distance[j] = w[j] / (x - ix[j]) */
     vdMul(n, w, w_x_distance, w_x_distance);
 
+    /* numerator = sum_j  iy[j] * w[j]/(x-ix[j]),  denominator = sum_j w[j]/(x-ix[j]) */
     double f_w_x_distance[n];
     vdMul(n, w_x_distance, iy.mat_data, f_w_x_distance);
 
@@ -157,5 +160,3 @@ void print_matrix(rd_mat_t mat) {
         printf("\n");
     }
 }
-
-

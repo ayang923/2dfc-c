@@ -115,7 +115,7 @@ void q_patch_evaluate_f(q_patch_t *q_patch, scalar_func_2D_t f) {
 }
 
 void q_patch_in_patch(q_patch_t *q_patch, rd_mat_t xi, rd_mat_t eta, ri_mat_t *in_patch_msk) {
-    // assumes xi and eta have save shape
+    /* xi and eta must have the same shape */
     ri_mat_shape(in_patch_msk, xi.rows, xi.columns);
 
     for (MKL_INT i = 0; i < xi.rows*xi.columns; i++) {
@@ -124,7 +124,7 @@ void q_patch_in_patch(q_patch_t *q_patch, rd_mat_t xi, rd_mat_t eta, ri_mat_t *i
 }
 
 void q_patch_round_boundary_points(q_patch_t *q_patch, rd_mat_t *xi, rd_mat_t *eta) {
-    // assumes xi and eta have same shape
+    /* xi and eta must have the same shape */
     for(MKL_INT i = 0; i < xi->rows*eta->columns; i++) {
         if (fabs(xi->mat_data[i]-q_patch->xi_start) < q_patch->eps_xi_eta) {
             xi->mat_data[i] = q_patch->xi_start;
@@ -204,6 +204,11 @@ void q_patch_boundary_mesh_xy(q_patch_t *q_patch, bool pad_boundary, rd_mat_t *b
     q_patch_convert_to_XY(q_patch, boundary_mesh_xi, boundary_mesh_eta, boundary_mesh_x, boundary_mesh_y);
 }
 
+/*
+ * Builds a default set of 20 initial guesses for Newton inversion of M_p,
+ * spread over the four sides of the parameter domain boundary.
+ * Used when no initial guesses are provided by the caller.
+ */
 void default_initial_guesses(q_patch_t *q_patch, MKL_INT N, rd_mat_t* initial_guesses_xi_mat, rd_mat_t* initial_guesses_eta_mat, double* initial_guesses_xi_data, double* initial_guesses_eta_data) {
     MKL_INT N_segment = ceil(N/4.0);
 
@@ -232,7 +237,7 @@ void default_initial_guesses(q_patch_t *q_patch, MKL_INT N, rd_mat_t* initial_gu
 
 
 inverse_M_p_return_type_t q_patch_inverse_M_p(q_patch_t *q_patch, double x, double y, rd_mat_t* initial_guesses_xi, rd_mat_t* initial_guesses_eta) {
-    // global data for the case no initial guesses are given
+    /* Stack buffers used when no initial guesses are supplied by the caller */
     int N = 20;
     int N_segment = ceil(N/4);
     double initial_guesses_xi_data[N_segment*4];
@@ -275,13 +280,15 @@ inverse_M_p_return_type_t q_patch_inverse_M_p(q_patch_t *q_patch, double x, doub
         v.mat_data[0] = initial_guesses_xi->mat_data[k];
         v.mat_data[1] = initial_guesses_eta->mat_data[k];
 
-        //newton solve with max iterations 1000 and error tolerance given by q_patch
+        /* Newton solve: max 1000 iterations, dual convergence on residual in
+         * physical space and step size in parameter space. */
         for (MKL_INT i = 0; i < 1000; i++) {
-            // evaluates difference between solutions in real space
+            /* Residual: f_v = M_p(v) - (x, y) */
             q_patch_evaluate_M_p(q_patch, rd_mat_init(v.mat_data, 1, 1), rd_mat_init(v.mat_data+1, 1, 1), &M_p_v_x, &M_p_v_y);
             vdSub(2, f_v_data, xy_exact_data, f_v_data);
             
-            // convergence threshold
+            /* Check convergence: both the physical residual and the parameter step
+             * must fall below the respective tolerances. */
             vdSub(2, v_data, v_prev_data, v_diff_data);
             if (fabs(f_v_data[cblas_idamax(2, f_v_data, 1)]) < q_patch->eps_xy && fabs(v_diff_data[0]) < q_patch->eps_xi_eta && fabs(v_diff_data[1]) < q_patch->eps_xi_eta) {
                 converged = 1;
@@ -291,7 +298,7 @@ inverse_M_p_return_type_t q_patch_inverse_M_p(q_patch_t *q_patch, double x, doub
             v_prev.mat_data[0] = v.mat_data[0];
             v_prev.mat_data[1] = v.mat_data[1];
 
-            //update step
+            /* Newton update: solve J * Δv = f_v, then v ← v - Δv */
             q_patch_evaluate_J(q_patch, v, &J_addr);
             LAPACKE_dgesv(LAPACK_COL_MAJOR, 2, 1, J_addr.mat_data, 2, ipiv, f_v_data, 2);
             vdSub(2, v_data, f_v_data, v_data);
@@ -346,7 +353,7 @@ locally_compute_return_type_t q_patch_locally_compute(q_patch_t *q_patch, double
     rd_mat_t interpol_xi_mesh = rd_mat_init(interpol_xi_mesh_data, M, 1);
     rd_mat_t interpol_eta_mesh = rd_mat_init(interpol_eta_mesh_data, M, 1);
 
-    // j*h+start
+    /* Convert grid indices to actual parameter values: val = j * h + start */
     for (MKL_INT i = 0; i < M; i++) {
         interpol_xi_mesh_data[i] = interpol_xi_j_mesh_data[i]*q_patch->h_xi + q_patch->xi_start;
         interpol_eta_mesh_data[i] = interpol_eta_j_mesh_data[i]*q_patch->h_eta + q_patch->eta_start;
@@ -574,6 +581,11 @@ void q_patch_apply_w_normalization_eta_down(q_patch_t *main_patch, q_patch_t *wi
     apply_w(main_patch, w_unnormalized, window_patch, window_w_param, X, Y, XI_j, ETA_j, true, &initial_guesses_xi, &initial_guesses_eta);
 }
 
+/*
+ * Finds the extreme ξ-value on main_patch that is reached by the boundary of
+ * window_patch as its edge parameter is swept.  Returns that ξ-value, which
+ * defines the overlap corner needed for window normalization.
+ */
 double compute_xi_corner(q_patch_t *main_patch, q_patch_t *window_patch, bool window_fix_xi, double window_fixed_edge, bool window_patch_right) {
     double window_xi_edge;
     double window_eta_edge;
@@ -640,6 +652,9 @@ double compute_xi_corner(q_patch_t *main_patch, q_patch_t *window_patch, bool wi
     return main_xi_corner;
 }
 
+/*
+ * Analogous to compute_xi_corner but tracks the extreme η-value on main_patch.
+ */
 double compute_eta_corner(q_patch_t *main_patch, q_patch_t *window_patch, bool window_fix_xi, double window_fixed_edge, bool window_patch_up) {
     double window_xi_edge;
     double window_eta_edge;
@@ -707,6 +722,10 @@ double compute_eta_corner(q_patch_t *main_patch, q_patch_t *window_patch, bool w
     return main_eta_corner;
 }
 
+/*
+ * Returns the number of grid points in the ξ-overlap region of main_patch,
+ * i.e. the portion of main_patch that shares physical space with window_patch.
+ */
 MKL_INT xi_overlap_mesh_num_el(q_patch_t *main_patch, double xi_corner, bool window_patch_right) {
     if (window_patch_right) {
         MKL_INT xi_corner_j = ceil((xi_corner-main_patch->xi_start)/main_patch->h_xi);
@@ -717,6 +736,9 @@ MKL_INT xi_overlap_mesh_num_el(q_patch_t *main_patch, double xi_corner, bool win
     }
 }
 
+/*
+ * Returns the number of grid points in the η-overlap region of main_patch.
+ */
 MKL_INT eta_overlap_mesh_num_el(q_patch_t *main_patch, double eta_corner, bool window_patch_up) {
     if (window_patch_up) {
         MKL_INT eta_corner_j = ceil((eta_corner-main_patch->eta_start)/main_patch->h_eta);
@@ -727,6 +749,11 @@ MKL_INT eta_overlap_mesh_num_el(q_patch_t *main_patch, double eta_corner, bool w
     }
 }
 
+/*
+ * Fills XI_overlap and ETA_overlap with the (ξ, η) coordinates of main_patch
+ * grid points in the overlap column strip, together with their integer indices
+ * XI_j and ETA_j.
+ */
 void compute_xi_overlap_mesh(q_patch_t *main_patch, double xi_corner, bool window_patch_right, rd_mat_t *XI_overlap, rd_mat_t *ETA_overlap, ri_mat_t *XI_j, ri_mat_t *ETA_j) {
     if (window_patch_right) {
         MKL_INT xi_corner_j = ceil((xi_corner-main_patch->xi_start)/main_patch->h_xi);
@@ -766,6 +793,10 @@ void compute_xi_overlap_mesh(q_patch_t *main_patch, double xi_corner, bool windo
     }
 }
 
+/*
+ * Fills XI_overlap and ETA_overlap with the (ξ, η) coordinates of main_patch
+ * grid points in the overlap row strip, together with their integer indices.
+ */
 void compute_eta_overlap_mesh(q_patch_t *main_patch, double eta_corner, bool window_patch_up, rd_mat_t *XI_overlap, rd_mat_t *ETA_overlap, ri_mat_t *XI_j, ri_mat_t *ETA_j) {
     if (window_patch_up) {
         MKL_INT eta_corner_j = ceil((eta_corner-main_patch->eta_start)/main_patch->h_eta);
@@ -804,8 +835,14 @@ void compute_eta_overlap_mesh(q_patch_t *main_patch, double eta_corner, bool win
     }
 }
 
+/*
+ * For each grid point in main_patch's overlap region, multiplies f_XY by the
+ * normalized window weight:  f *= w_main / (w_main + w_window).
+ * The window values for window_patch are obtained by inverting M_p at each
+ * overlap (x, y) point to find the corresponding parameter in window_patch.
+ */
 void apply_w(q_patch_t *main_patch, rd_mat_t w_unnormalized, q_patch_t *window_patch, w_param_t window_w_param, rd_mat_t overlap_X, rd_mat_t overlap_Y, ri_mat_t overlap_XI_j, ri_mat_t overlap_ETA_j, bool window_patch_w_xi_fixed, rd_mat_t *initial_guesses_xi, rd_mat_t *initial_guesses_eta) {
-    //preallocation for for loop
+    /* Pre-allocated scalars reused across the loop */
     double window_patch_xi;
     double window_patch_eta;
     
@@ -881,6 +918,11 @@ void apply_w(q_patch_t *main_patch, rd_mat_t w_unnormalized, q_patch_t *window_p
     }
 }
 
+/*
+ * Applies the window normalization to window_patch in its own overlap region
+ * against main_patch, and returns the w_param for window_patch so that the
+ * caller can use it in the subsequent apply_w call on main_patch.
+ */
 w_param_t apply_w_normalization_window(q_patch_t *main_patch, w_param_t main_w_param, q_patch_t *window_patch, double window_xi_corner, bool up_down) {
     w_param_t window_w_param;
     if(up_down) {
@@ -917,6 +959,11 @@ w_param_t apply_w_normalization_window(q_patch_t *main_patch, w_param_t main_w_p
     return window_w_param;
 }
 
+/*
+ * 1D partition-of-unity window function based on the complementary error function.
+ * For θ ∈ [0, 1], evaluates w(θ) = 0.5 * erfc(6*(1 - 2θ)), which transitions
+ * smoothly from ~1 near θ = 0 to ~0 near θ = 1.
+ */
 void w_1D(rd_mat_t theta, rd_mat_t *w_1D_vals) {
     rd_mat_shape(w_1D_vals, theta.rows, theta.columns);
     MKL_INT size = theta.rows*theta.columns;

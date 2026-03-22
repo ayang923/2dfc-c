@@ -205,11 +205,11 @@ void r_cartesian_mesh_interpolate_patch(r_cartesian_mesh_obj_t *r_cartesian_mesh
 
         locally_compute_return_type_t f_locally_compute = q_patch_locally_compute(q_patch, xi_point, eta_point, M);
         if(f_locally_compute.in_range) {
-            f_R_patch[i] = f_locally_compute.f_xy;	      
+            f_R_patch[i] = f_locally_compute.f_xy;
         }
-	else {
+        else {
             printf("WARNING: interpolating point not in patch\n");
-	}
+        }
     }
     
     for (int i = 0; i < n_in_patch; i++) {
@@ -366,11 +366,11 @@ void r_cartesian_mesh_interpolate_patch_heap(r_cartesian_mesh_obj_t *r_cartesian
 
         locally_compute_return_type_t f_locally_compute = q_patch_locally_compute(q_patch, xi_point, eta_point, M);
         if(f_locally_compute.in_range) {
-            f_R_patch[i] = f_locally_compute.f_xy;	      
+            f_R_patch[i] = f_locally_compute.f_xy;
         }
-	else {
+        else {
             printf("WARNING: interpolating point not in patch\n");
-	}
+        }
     }
     
     for (int i = 0; i < n_in_patch; i++) {
@@ -507,14 +507,14 @@ double r_cartesian_mesh_compute_fc_error(r_cartesian_mesh_obj_t *r_cartesian_mes
     double intp_fc[n_y_err*n_x_err];
     for (int i = 0; i < n_y_err; i++) {
         for (int j = 0; j < n_x_err; j++) {
-        intp_fc[sub2ind(n_y_err, n_x_err, (sub_t){i, j})] = buf_padded[i][j].real;
+            intp_fc[sub2ind(n_y_err, n_x_err, (sub_t){i, j})] = buf_padded[i][j].real;
         }
     }
 
     double f_max = 0;
     for (int i = 0; i < n_y_err*n_x_err; i++) {
         if (in_interior_err_data[i]) {
-	  f_max = fmax(f_max, f(R_X_err_data[i], R_Y_err_data[i]));
+            f_max = fmax(f_max, f(R_X_err_data[i], R_Y_err_data[i]));
         }
     }
     
@@ -531,16 +531,16 @@ double r_cartesian_mesh_compute_fc_error(r_cartesian_mesh_obj_t *r_cartesian_mes
     double f_l2 = 0;
     for (int i = 0; i < n_y_err*n_x_err; i++) {
         if (in_interior_err_data[i]) {
-	  f_l2 += pow(f(R_X_err_data[i], R_Y_err_data[i]), 2);
+            f_l2 += pow(f(R_X_err_data[i], R_Y_err_data[i]), 2);
         }
     }
 
     double fc_err_2 = 0;
     for (int i = 0; i < n_y_err*n_x_err; i++) {
         if (in_interior_err_data[i]) {
-	  fc_err_2 += pow(f(R_X_err_data[i], R_Y_err_data[i]) - intp_fc[i], 2);
+            fc_err_2 += pow(f(R_X_err_data[i], R_Y_err_data[i]) - intp_fc[i], 2);
         }
-    }    
+    }
 
     printf("Relative l2 error: %e\n", sqrt(fc_err_2)/sqrt(f_l2));
     
@@ -710,7 +710,7 @@ double r_cartesian_mesh_compute_fc_error_heap(r_cartesian_mesh_obj_t *r_cartesia
     double f_max = 0;
     for (int i = 0; i < n_y_err*n_x_err; i++) {
         if (in_interior_err_data[i]) {
-	  f_max = fmax(f_max, f(R_X_err_data[i], R_Y_err_data[i]));
+            f_max = fmax(f_max, f(R_X_err_data[i], R_Y_err_data[i]));
         }
     }
     
@@ -727,16 +727,16 @@ double r_cartesian_mesh_compute_fc_error_heap(r_cartesian_mesh_obj_t *r_cartesia
     double f_l2 = 0;
     for (int i = 0; i < n_y_err*n_x_err; i++) {
         if (in_interior_err_data[i]) {
-	  f_l2 += pow(f(R_X_err_data[i], R_Y_err_data[i]), 2);
+            f_l2 += pow(f(R_X_err_data[i], R_Y_err_data[i]), 2);
         }
     }
 
     double fc_err_2 = 0;
     for (int i = 0; i < n_y_err*n_x_err; i++) {
         if (in_interior_err_data[i]) {
-	  fc_err_2 += pow(f(R_X_err_data[i], R_Y_err_data[i]) - intp_fc[i], 2);
+            fc_err_2 += pow(f(R_X_err_data[i], R_Y_err_data[i]) - intp_fc[i], 2);
         }
-    }    
+    }
 
     printf("Relative l2 error: %e\n", sqrt(fc_err_2)/sqrt(f_l2));
     

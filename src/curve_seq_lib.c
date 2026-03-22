@@ -11,8 +11,8 @@
 void M_p_S_general_handle(rd_mat_t xi, rd_mat_t eta, double H, rd_mat_t *x, rd_mat_t *y, void* extra_param) {
     rd_mat_shape(x, xi.rows, xi.columns);
     rd_mat_shape(y, xi.rows, xi.columns);
-    
-    // using p for conciseness
+
+    /* Abbreviate the parameter struct for conciseness */
     M_p_S_general_param_t *p = (M_p_S_general_param_t*) extra_param;
 
     for (MKL_INT i = 0; i < xi.rows*xi.columns; i++) {
@@ -47,8 +47,8 @@ void J_S_general_handle(rd_mat_t v, double H, rd_mat_t *J_vals, void* extra_para
 void M_p_C_handle(rd_mat_t xi, rd_mat_t eta, rd_mat_t *x, rd_mat_t *y, void* extra_param) {
     rd_mat_shape(x, xi.rows, xi.columns);
     rd_mat_shape(y, xi.rows, xi.columns);
-    
-    // using p for conciseness
+
+    /* Abbreviate the parameter struct for conciseness */
     M_p_C_param_t *p = (M_p_C_param_t*) extra_param;
 
     for (MKL_INT i = 0; i < xi.rows*xi.columns; i++) {
@@ -190,6 +190,12 @@ MKL_INT curve_construct_C_patch(curve_t *curve, c_patch_t *c_patch, rd_mat_t *c_
     
     MKL_INT total_el;
     c_patch_f_W->mat_data = data_stack;
+    /*
+     * Determine corner type by the sign of the 2D cross product of the
+     * incoming tangent (curr_v) and outgoing tangent (next_v).
+     * Non-negative cross product → left turn → C2 (convex).
+     * Negative cross product    → right turn → C1 (concave).
+     */
     if(curr_v_xi*next_v_eta - curr_v_eta*next_v_xi >= 0) {
         c_patch_f_L->mat_data = data_stack + curve_C2_patch_f_W_num_el(curve, d);
 
@@ -259,6 +265,7 @@ MKL_INT curve_seq_num_f_mat_points(curve_seq_t *curve_seq, MKL_INT d) {
     for (int i = 0; i < curve_seq->n_curves; i++) {
         total_el += curve_S_patch_num_el(curr, d);
 
+        /* Replicate the cross-product sign test to pick the correct C-patch size */
         double curr_v_xi = curr->l_1(1.0) - curr->l_1(1.0-1.0/(curr->n-1));
         double curr_v_eta = curr->l_2(1.0) - curr->l_2(1.0-1.0/(curr->n-1));
         double next_v_xi = curr->next_curve->l_1(1.0/(curr->next_curve->n-1)) - curr->l_1(1.0);
@@ -276,11 +283,11 @@ MKL_INT curve_seq_num_f_mat_points(curve_seq_t *curve_seq, MKL_INT d) {
 }
 
 void curve_seq_construct_patches(curve_seq_t *curve_seq, s_patch_t *s_patches, c_patch_t *c_patches, rd_mat_t *f_mats, double *f_mat_points, scalar_func_2D_t f, MKL_INT d, double eps_xi_eta, double eps_xy) {
-    curve_t *curr_curve = curve_seq->first_curve;
-    c_patch_t *curr_c_patch = c_patches;
-    s_patch_t *curr_s_patch = s_patches;
-    rd_mat_t *curr_f_mat = f_mats;
-    double *curr_f_mat_point = f_mat_points;
+    curve_t  *curr_curve     = curve_seq->first_curve;
+    c_patch_t *curr_c_patch  = c_patches;
+    s_patch_t *curr_s_patch  = s_patches;
+    rd_mat_t  *curr_f_mat    = f_mats;
+    double    *curr_f_mat_point = f_mat_points;
 
     s_patch_t *prev_s_patch;
     c_patch_t *prev_c_patch;
