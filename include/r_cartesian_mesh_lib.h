@@ -60,25 +60,6 @@ typedef struct r_cartesian_mesh_obj {
  */
 MKL_INT r_cartesian_n_total(double x_start, double x_end, double y_start, double y_end, double h);
 
-/**
- * @brief Initializes an r_cartesian_mesh_obj_t and builds its meshgrid and interior mask.
- *
- * Rounds x_end and y_end up to the nearest grid line, computes n_x and n_y,
- * builds (R_X, R_Y) via meshgrid, zeros f_R, and fills in_interior via inpolygon_mesh.
- *
- * @param r_cartesian_mesh_obj  Output struct to initialize.
- * @param x_start               Start of x-extent.
- * @param x_end                 End of x-extent (rounded up internally).
- * @param y_start               Start of y-extent.
- * @param y_end                 End of y-extent (rounded up internally).
- * @param h                     Grid spacing.
- * @param boundary_X            Closed boundary x-coordinates for inpolygon test.
- * @param boundary_Y            Closed boundary y-coordinates.
- * @param R_X                   Pre-allocated (n_total) double buffer for x meshgrid.
- * @param R_Y                   Pre-allocated (n_total) double buffer for y meshgrid.
- * @param in_interior           Pre-allocated (n_total) integer buffer for interior mask.
- * @param f_R                   Pre-allocated (n_total) double buffer for function values (zero-initialized).
- */
 void r_cartesian_mesh_init(r_cartesian_mesh_obj_t *r_cartesian_mesh_obj, double x_start, double x_end, double y_start, double y_end, double h, rd_mat_t boundary_X, rd_mat_t boundary_Y, rd_mat_t *R_X, rd_mat_t *R_Y, ri_mat_t *in_interior, rd_mat_t *f_R);
 
 /**
@@ -108,8 +89,7 @@ void r_cartesian_mesh_interpolate_patch_heap(r_cartesian_mesh_obj_t *r_cartesian
  * @brief Fills interior mesh points with exact function values.
  *
  * For every grid point marked interior by in_interior, overwrites f_R with
- * the exact value f(x, y).  This corrects the contribution from the FC patches
- * in the domain interior where patches do not reach.
+ * the exact value f(x, y). 
  *
  * @param r_cartesian_mesh_obj  The Cartesian mesh (f_R is modified in place).
  * @param f                     The exact function f(x, y).
